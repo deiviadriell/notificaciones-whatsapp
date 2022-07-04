@@ -20,9 +20,17 @@ const sendMessagePost = (req, res) => {
         res.send({ status: false })
     }
 }
+
+const get = (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // If needed
+        res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type'); // If needed
+        res.setHeader('Access-Control-Allow-Credentials', true); // If needed
+    return true;
+}
 const indexPath = (req, res) => {
     let indexPath = path.join(__dirname, "../index.html");
     res.sendFile(indexPath);
 }
 
-module.exports = { sendMessagePost,  indexPath }
+module.exports = { sendMessagePost,  indexPath, get }
