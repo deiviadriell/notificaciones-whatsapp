@@ -2,3 +2,5 @@
 /node_modules/*
 .wwebjs_auth
 whatsapp-sessions.json
+/daemon
+/daemon/*
