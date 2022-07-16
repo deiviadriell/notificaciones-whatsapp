@@ -49,10 +49,12 @@ const getSessionsFile = function () {
   return JSON.parse(fs.readFileSync(SESSIONS_FILE));
 }
 
-const createSession = function (id, description) {  
-  client = new Client(createClient(id));
+const createSession = async (id, description) => {  
+  const clientJson = await createClient(id);
+  client = new Client(clientJson);
   client.initialize();
-  client.on('qr', (qr) => {        
+  client.on('qr', (qr) => {
+    io.emit('estado', "qr");
     qrcode.toDataURL(qr, (err, url) => {
       io.emit('estado', "desconectado");
       io.emit('qr', url);
@@ -60,28 +62,18 @@ const createSession = function (id, description) {
   });
 
   client.on('ready', () => {
-    io.emit('estadoReady', 'conectado');
-    const savedSessions = getSessionsFile();    
+    io.emit('estado', "ready");
+    loadRoutes(client);
+    const savedSessions = getSessionsFile();
     const sessionIndex = savedSessions.findIndex(sess => sess.id == id);
-    if (sessionIndex == -1) {
-      savedSessions.push({
-        id: id,
-        description: description,
-        ready: true,
-      });
-      setSessionsFile(savedSessions);
-    }    
-    io.emit('info', {
-      usuario: client.info.pushname,
-      numero: client.info.wid.user,
-      sistemaOperativo: client.info.platform,
-      estado: true
-     });    
+    savedSessions[sessionIndex].ready = true;
+    setSessionsFile(savedSessions);
+
+
   });
 
   client.on('authenticated', () => {
-    loadRoutes(client)    
-    io.emit('estado', 'conectado');
+    io.emit('estado', { id: id, text: 'Whatsapp is authenticated!' });
   });
 
   client.on('auth_failure', function (session) {
@@ -89,7 +81,7 @@ const createSession = function (id, description) {
   });
 
   client.on('disconnected', (reason) => {
-    console.log('se desconectó')
+    console.log('se desconectó');
     io.emit('estado', 'desconectado');
     client.destroy();
     client.initialize();
@@ -122,6 +114,7 @@ const createSession = function (id, description) {
 }
 
 const init = function(socket) {  
+  io.emit('estado', "init");
   const savedSessions = getSessionsFile();
 
   if (savedSessions.length > 0) {
@@ -129,7 +122,7 @@ const init = function(socket) {
       savedSessions.forEach((e, i, arr) => {
         arr[i].ready = false;
       });
-      socket.emit('estado', "init");
+      
     } else {
       savedSessions.forEach(sess => {
         createSession(sess.id, sess.description);
@@ -154,7 +147,8 @@ io.on('connection', socket => {
    */
 
   const loadRoutes = (client) => {    
-    app.use('/api/', middlewareClient(client), require('./routes/api'))
+    app.use('/api/', middlewareClient(client), require('./routes/api'))   
+    io.emit('estado', "loadedRoutes");
   }
 
 

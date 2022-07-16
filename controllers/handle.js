@@ -17,26 +17,31 @@ const cleanNumber = (number) => {
  *
  * @param {*} cb 
  */
-const createClient = (id) => {
-    return {
-        restartOnAuthFail: true,
-        puppeteer: {
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process', // <- this one doesn't works in Windows
-                '--disable-gpu'
-            ],
-        },
-        authStrategy: new LocalAuth({
-            clientId: id
-        })
-    }
+function createClient (id)  {
+
+    return new Promise(resolve => {         
+            const client = {
+                restartOnAuthFail: true,
+                puppeteer: {
+                    headless: true,
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-accelerated-2d-canvas',
+                        '--no-first-run',
+                        '--no-zygote',
+                        '--single-process', // <- this one doesn't works in Windows
+                        '--disable-gpu'
+                    ],
+                },
+                authStrategy: new LocalAuth({
+                    clientId: id
+                })
+            }
+            resolve(client)    
+    });
+    
 }
 
 const isValidNumber = (rawNumber) => {
