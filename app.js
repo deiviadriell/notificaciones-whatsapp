@@ -52,8 +52,13 @@ const getSessionsFile = function () {
 const createSession = async (id, description) => {  
   const clientJson = await createClient(id);
   client = new Client(clientJson);
+  console.log("********************************");
+  console.log("Creando Cliente WhatsApp...");
   client.initialize();
+  console.log("Cliente WhatsApp Inicializado...");
+  
   client.on('qr', (qr) => {
+    console.log("Generando Qr");
     io.emit('estado', "qr");
     qrcode.toDataURL(qr, (err, url) => {
       io.emit('estado', "desconectado");
@@ -63,7 +68,8 @@ const createSession = async (id, description) => {
 
   client.on('ready', () => {
     io.emit('estado', "ready");
-    loadRoutes(client);
+    console.log("Cliente Ready");
+    loadRoutes(client);    
     const savedSessions = getSessionsFile();
     const sessionIndex = savedSessions.findIndex(sess => sess.id == id);
     savedSessions[sessionIndex].ready = true;
@@ -74,6 +80,7 @@ const createSession = async (id, description) => {
 
   client.on('authenticated', () => {
     io.emit('estado', { id: id, text: 'Whatsapp is authenticated!' });
+    console.log("Whatsapp is authenticated!");
   });
 
   client.on('auth_failure', function (session) {
@@ -81,7 +88,7 @@ const createSession = async (id, description) => {
   });
 
   client.on('disconnected', (reason) => {
-    console.log('se desconectó');
+    console.log('Se desconectó el WhatsApp');
     io.emit('estado', 'desconectado');
     client.destroy();
     client.initialize();
@@ -130,14 +137,24 @@ const init = function(socket) {
     }
   }
 }
+try {
+  init();
+  
+} catch (error) {
+  init();
+  
+}
 
-init();
 
 // Socket IO
 io.on('connection', socket => {  
   init(socket);
   socket.on('create-session', (data) => {    
     createSession(data.id, data.description);
+  });
+
+  socket.on('disconnect', () => {    
+    console.log("Se desconectó el FrontEnd")
   });
 });
 
@@ -149,6 +166,7 @@ io.on('connection', socket => {
   const loadRoutes = (client) => {    
     app.use('/api/', middlewareClient(client), require('./routes/api'))   
     io.emit('estado', "loadedRoutes");
+    console.log("Rutas Cargadas");
   }
 
 

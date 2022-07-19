@@ -21,11 +21,13 @@ const sendMessagePost = (req, res) => {
     }
 }
 
-const get = (req, res) => {
+const getEstadoServidor = (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // If needed
-        res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type'); // If needed
-        res.setHeader('Access-Control-Allow-Credentials', true); // If needed
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // If needed
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type'); // If needed
+    res.setHeader('Access-Control-Allow-Credentials', true); // If needed
+
+   
     return true;
 }
 const indexPath = (req, res) => {
@@ -33,4 +35,4 @@ const indexPath = (req, res) => {
     res.sendFile(indexPath);
 }
 
-module.exports = { sendMessagePost,  indexPath, get }
+module.exports = { sendMessagePost, indexPath, getEstadoServidor }
