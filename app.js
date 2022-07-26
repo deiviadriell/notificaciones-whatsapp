@@ -1,6 +1,8 @@
 /**
  * ⚡⚡⚡ DECLARAMOS LAS LIBRERIAS y CONSTANTES A USAR!. ⚡⚡⚡
  */
+
+
 require('dotenv').config()
 const fs = require('fs');
 const express = require('express');
@@ -14,6 +16,9 @@ const http = require('http');
 const app = express();
 let client;
 const server = http.createServer(app);
+let estado = "Iniciando";
+let id = "1234567890";
+let description = "establecimiento";
 
 app.use(cors())
 app.use(express.json())
@@ -24,6 +29,7 @@ const port = process.env.PORT || 3000
 app.use('/', require('./routes/web'))
 const sessions = [];
 const SESSIONS_FILE = './whatsapp-sessions.json';
+
 
 const createSessionsFileIfNotExists = function () {
   if (!fs.existsSync(SESSIONS_FILE)) {
@@ -48,21 +54,22 @@ const setSessionsFile = function (sessions) {
 const getSessionsFile = function () {
   return JSON.parse(fs.readFileSync(SESSIONS_FILE));
 }
-
 const createSession = async (id, description) => {  
-  const clientJson = await createClient(id);
-  client = new Client(clientJson);
-  console.log("********************************");
+  //const clientJson = createClient(id);  
+  client = new Client(createClient(id));  
+  
+  //client = new Client();    
   console.log("Creando Cliente WhatsApp...");
   client.initialize();
   console.log("Cliente WhatsApp Inicializado...");
   
   client.on('qr', (qr) => {
     console.log("Generando Qr");
+    estado="generandoQR";
     io.emit('estado', "qr");
     qrcode.toDataURL(qr, (err, url) => {
       io.emit('estado', "desconectado");
-      io.emit('qr', url);
+      io.emit('qr', url);      
     });
   });
 
@@ -81,6 +88,7 @@ const createSession = async (id, description) => {
   client.on('authenticated', () => {
     io.emit('estado', { id: id, text: 'Whatsapp is authenticated!' });
     console.log("Whatsapp is authenticated!");
+    estado = "authenticated";
   });
 
   client.on('auth_failure', function (session) {
@@ -92,10 +100,10 @@ const createSession = async (id, description) => {
     io.emit('estado', 'desconectado');
     client.destroy();
     client.initialize();
-    const savedSessions = getSessionsFile();
-    const sessionIndex = savedSessions.findIndex(sess => sess.id == id);
-    savedSessions.splice(sessionIndex, 1);
-    setSessionsFile(savedSessions);
+    // const savedSessions = getSessionsFile();
+    // const sessionIndex = savedSessions.findIndex(sess => sess.id == id);
+    // savedSessions.splice(sessionIndex, 1);
+    // setSessionsFile(savedSessions);
     io.emit('remove-session', id);
   });
 
@@ -122,39 +130,46 @@ const createSession = async (id, description) => {
 
 const init = function(socket) {  
   io.emit('estado', "init");
-  const savedSessions = getSessionsFile();
+  createSession(id, description);
+  // const savedSessions = getSessionsFile();
 
-  if (savedSessions.length > 0) {
-    if (socket) {          
-      savedSessions.forEach((e, i, arr) => {
-        arr[i].ready = false;
-      });
+  // if (savedSessions.length > 0) {
+  //   if (socket) {          
+  //     savedSessions.forEach((e, i, arr) => {
+  //       arr[i].ready = false;
+  //     });
       
-    } else {
-      savedSessions.forEach(sess => {
-        createSession(sess.id, sess.description);
-      });
-    }
-  }
-}
-try {
-  init();
-  
-} catch (error) {
-  init();
-  
+  //   } else {
+  //     savedSessions.forEach(sess => {
+  //       createSession(sess.id, sess.description);
+  //     });
+  //   }
+  // }
 }
 
 
+  
+  
 // Socket IO
-io.on('connection', socket => {  
-  init(socket);
-  socket.on('create-session', (data) => {    
-    createSession(data.id, data.description);
-  });
+io.on('connection', socket => {    
+  console.log("Cliente conectado:" ,socket.id);
+  var interval = setInterval(function() {   
+    if(estado!= "loadedRoutes" && estado !="authenticated" && estado!="generandoQR"){      
+      console.log("Estado del servidor: ",estado);
+      init(socket);
+    }
+        
+  }, 30000);
+  
+  //init(socket);
+  // socket.on('create-session', (data) => {  
+  //   if(estado!= "loadedRoutes" || estado !="authenticated")
+  //     createSession(data.id, data.description);
+  // });
 
   socket.on('disconnect', () => {    
-    console.log("Se desconectó el FrontEnd")
+    console.log("Se desconectó el FrontEnd");
+    estado = "Iniciar";
   });
 });
 
@@ -166,6 +181,7 @@ io.on('connection', socket => {
   const loadRoutes = (client) => {    
     app.use('/api/', middlewareClient(client), require('./routes/api'))   
     io.emit('estado', "loadedRoutes");
+    estado = "loadedRoutes";
     console.log("Rutas Cargadas");
   }
 
